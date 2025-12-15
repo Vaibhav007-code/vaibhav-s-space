@@ -1,7 +1,7 @@
 // Shared utilities for Vercel serverless functions
-const { kv } = require('@vercel/kv');
 const cloudinary = require('cloudinary').v2;
 const bcrypt = require('bcryptjs');
+const https = require('https');
 
 // Configure Cloudinary
 cloudinary.config({
@@ -10,65 +10,110 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Data keys for Vercel KV
-const KEYS = {
-    ENTRIES: 'audio_entries',
-    ANALYTICS: 'analytics',
-    ADMIN: 'admin_credentials'
-};
+const DB_FILE = 'vaibhav_space_db.json';
 
-// Helper to read data from Vercel KV
+// Helper to fetch JSON from Cloudinary URL
+function fetchJson(url) {
+    return new Promise((resolve, reject) => {
+        https.get(url, (res) => {
+            let data = '';
+            res.on('data', (chunk) => data += chunk);
+            res.on('end', () => {
+                try {
+                    resolve(JSON.parse(data));
+                } catch (e) {
+                    resolve(null);
+                }
+            });
+        }).on('error', reject);
+    });
+}
+
+// Helper to read data from Cloudinary (simulating DB)
 async function readData() {
     try {
-        const entries = await kv.get(KEYS.ENTRIES) || [];
-        const analytics = await kv.get(KEYS.ANALYTICS) || { totalPlays: 0, dailyVisits: {} };
-        return { entries, analytics };
+        // Try to get the file URL
+        const result = await cloudinary.api.resource(DB_FILE, {
+            resource_type: 'raw',
+            type: 'upload'
+        });
+
+        // Fetch the actual content
+        if (result && result.secure_url) {
+            // Add a timestamp to bust cache
+            const data = await fetchJson(result.secure_url + '?t=' + Date.now());
+            if (data) return data;
+        }
     } catch (error) {
-        console.error('Error reading data:', error);
-        return { entries: [], analytics: { totalPlays: 0, dailyVisits: {} } };
+        // If file doesn't exist (404), return default empty state
+        if (error.error && error.error.http_code === 404) {
+            return {
+                entries: [],
+                analytics: { totalPlays: 0, dailyVisits: {} },
+                admin: null
+            };
+        }
+        console.error('Error reading DB:', error);
+    }
+
+    // Default fallback
+    return {
+        entries: [],
+        analytics: { totalPlays: 0, dailyVisits: {} },
+        admin: null
+    };
+}
+
+// Helper to save data to Cloudinary
+async function saveData(data) {
+    try {
+        await new Promise((resolve, reject) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+                {
+                    public_id: DB_FILE.replace('.json', ''),
+                    resource_type: 'raw',
+                    format: 'json',
+                    overwrite: true
+                },
+                (error, result) => {
+                    if (error) reject(error);
+                    else resolve(result);
+                }
+            );
+
+            uploadStream.write(Buffer.from(JSON.stringify(data)));
+            uploadStream.end();
+        });
+        return true;
+    } catch (error) {
+        console.error('Error saving DB:', error);
+        return false;
     }
 }
 
-// Helper to write entries
+// WRAPPER FUNCTIONS to match old interface
+
 async function writeEntries(entries) {
-    try {
-        await kv.set(KEYS.ENTRIES, entries);
-        return true;
-    } catch (error) {
-        console.error('Error writing entries:', error);
-        return false;
-    }
+    const data = await readData();
+    data.entries = entries;
+    return await saveData(data);
 }
 
-// Helper to write analytics
 async function writeAnalytics(analytics) {
-    try {
-        await kv.set(KEYS.ANALYTICS, analytics);
-        return true;
-    } catch (error) {
-        console.error('Error writing analytics:', error);
-        return false;
-    }
+    const data = await readData();
+    data.analytics = analytics;
+    return await saveData(data);
 }
 
-// Admin credentials management
 async function getAdminCredentials() {
-    try {
-        return await kv.get(KEYS.ADMIN);
-    } catch (error) {
-        console.error('Error reading admin credentials:', error);
-        return null;
-    }
+    const data = await readData();
+    return data.admin;
 }
 
 async function setAdminCredentials(credentials) {
-    try {
-        await kv.set(KEYS.ADMIN, credentials);
-        return true;
-    } catch (error) {
-        console.error('Error saving admin credentials:', error);
-        return false;
-    }
+    const data = await readData();
+    data.admin = credentials;
+    return await saveData(data);
 }
 
 // Admin authentication
