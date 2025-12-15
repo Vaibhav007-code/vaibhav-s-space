@@ -8,26 +8,45 @@ let adminPassword = '';
 
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', async () => {
-    // Check if admin exists
-    const response = await fetch(`${API_URL}/api/admin/check`);
-    const { isSetup, securityQuestion } = await response.json();
+    try {
+        // Check if admin exists
+        const response = await fetch(`${API_URL}/api/admin/check`);
 
-    if (!isSetup) {
-        showSetup();
-    } else {
-        // Check if logged in
-        const savedPassword = sessionStorage.getItem('adminPassword');
-        if (savedPassword) {
-            adminPassword = savedPassword;
-            if (await verifyPassword()) {
-                showAdminPanel();
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const { isSetup, securityQuestion } = data;
+
+        if (!isSetup) {
+            showSetup();
+        } else {
+            // Check if logged in
+            const savedPassword = sessionStorage.getItem('adminPassword');
+            if (savedPassword) {
+                adminPassword = savedPassword;
+                if (await verifyPassword()) {
+                    showAdminPanel();
+                } else {
+                    sessionStorage.removeItem('adminPassword');
+                    showLogin(securityQuestion);
+                }
             } else {
-                sessionStorage.removeItem('adminPassword');
                 showLogin(securityQuestion);
             }
-        } else {
-            showLogin(securityQuestion);
         }
+    } catch (error) {
+        console.error('Init error:', error);
+        // If API fails, assume we need to login or setup manually
+        // Just show login as fail-safe
+        document.getElementById('adminLogin').innerHTML = `
+        <div class="login-card">
+            <h2>Connection Error</h2>
+            <p class="error-message">Could not connect to server.</p>
+            <button onclick="window.location.reload()" class="btn-primary" style="margin-top:1rem">Retry</button>
+        </div>
+    `;
     }
 });
 
