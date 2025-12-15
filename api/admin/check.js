@@ -10,11 +10,18 @@ module.exports = async (req, res) => {
 
     try {
         const credentials = await getAdminCredentials();
+        console.log('Admin check - credentials:', credentials ? 'EXISTS' : 'NULL');
+
         res.status(200).json({
             isSetup: !!credentials,
             securityQuestion: credentials?.securityQuestion || null
         });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to check admin status' });
+        console.error('Admin check error:', error);
+        // Assume not setup on error
+        res.status(200).json({
+            isSetup: false,
+            securityQuestion: null
+        });
     }
 };
