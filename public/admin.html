@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin — Vaibhav's Space</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body class="admin-body">
+    <!-- Admin Login -->
+    <div class="admin-login" id="adminLogin">
+        <div class="login-card">
+            <h2>Admin Access</h2>
+            <p class="login-subtitle">Enter your secret key</p>
+            <form id="loginForm">
+                <input type="password" id="secretInput" placeholder="Secret key" autocomplete="off" required />
+                <button type="submit" class="btn-primary">Enter</button>
+            </form>
+            <p class="error-message" id="loginError"></p>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div class="admin-panel hidden" id="adminPanel">
+        <header class="admin-header">
+            <div class="admin-header-content">
+                <h1>Admin Panel</h1>
+                <button class="btn-secondary" id="logoutBtn">Logout</button>
+            </div>
+        </header>
+
+        <div class="admin-content">
+            <!-- Upload Section -->
+            <section class="admin-section">
+                <h2>Upload New Audio</h2>
+                <form id="uploadForm" class="upload-form">
+                    <div class="form-group">
+                        <label for="audioFile" class="file-label">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 4L12 16M12 16L8 12M12 16L16 12" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" fill="none" />
+                                <path d="M4 17V19C4 20.1046 4.89543 21 6 21H18C19.1046 21 20 20.1046 20 19V17"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                            </svg>
+                            <span id="fileLabel">Choose audio file</span>
+                            <input type="file" id="audioFile" accept="audio/mp3,audio/mp4,audio/wav,audio/x-m4a"
+                                required />
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <input type="text" id="titleInput" placeholder="Title (required)" required />
+                    </div>
+
+                    <div class="form-group">
+                        <textarea id="descriptionInput" placeholder="Description (optional)" rows="3"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn-primary" id="uploadBtn">
+                        <span>Publish</span>
+                    </button>
+                </form>
+
+                <div class="upload-progress hidden" id="uploadProgress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <p id="progressText">Uploading...</p>
+                </div>
+            </section>
+
+            <!-- Analytics Section -->
+            <section class="admin-section">
+                <h2>Analytics</h2>
+                <div class="analytics-grid" id="analyticsGrid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalEntries">-</div>
+                        <div class="stat-label">Total Entries</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalPlays">-</div>
+                        <div class="stat-label">Total Plays</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="todayVisits">-</div>
+                        <div class="stat-label">Today's Visits</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Manage Entries Section -->
+            <section class="admin-section">
+                <h2>Manage Entries</h2>
+                <div class="manage-entries" id="manageEntries">
+                    <!-- Entries will be dynamically loaded here -->
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="/js/admin.js"></script>
+</body>
+
+</html>
